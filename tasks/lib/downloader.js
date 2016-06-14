@@ -67,6 +67,10 @@ module.exports = {
                 if (done.promise.isRejected()) return;
                 decompress(stream.path, cachepath).then(self.stripRootFolder).then(function(files) {
                     done.resolve(files);
+                })
+                .catch(function(e) {
+                    console.warn(e);
+                    done.resolve();
                 });
             });
 
