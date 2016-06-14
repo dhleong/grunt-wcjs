@@ -29,12 +29,26 @@ function getWCJS(runtime, version, dir, callback) {
 
             _.forEach(json.assets, function(asset) {
                 var assetParsed = path.parse(asset.name).name.split('_');
+                var typeIdx = 1;
+                var versIdx = 2;
+                var archIdx = 3;
+                var platIdx = 4;
+                var vlcVersion = null;
+
+                if (assetParsed[4] == 'VLC') {
+                    typeIdx = 2;
+                    versIdx = 3;
+                    archIdx = 6;
+                    platIdx = 7;
+                    vlcVersion = assetParsed[5];
+                }
 
                 var assetRuntime = {
-                    type: assetParsed[1],
-                    version: (runtime.version === 'latest') ? 'latest' : assetParsed[2],
-                    arch: assetParsed[3],
-                    platform: assetParsed[4]
+                    type: assetParsed[typeIdx],
+                    version: (runtime.version === 'latest') ? 'latest' : assetParsed[versIdx], // NB: this is no longer supported
+                    arch: assetParsed[archIdx],
+                    platform: assetParsed[platIdx].replace('\.tar', ''),
+                    vlc: vlcVersion
                 };
                 if (_.isEqual(runtime, assetRuntime))
                     candidate = asset;
@@ -71,7 +85,8 @@ module.exports = function(grunt) {
                 type: 'electron',
                 version: 'latest',
                 arch: getPlatformInfo().split(':')[1],
-                platform: getPlatformInfo().split(':')[0]
+                platform: getPlatformInfo().split(':')[0],
+                vlc: null // by default, don't match vlc version
             }
         });
 

@@ -4,7 +4,7 @@ var progress = require('progress');
 var fs = require('fs');
 var path = require('path');
 var temp = require('temp');
-var DecompressZip = require('decompress-zip');
+var decompress = require('decompress');
 var ncp = require('graceful-ncp').ncp;
 var rimraf = require('rimraf');
 
@@ -60,51 +60,18 @@ module.exports = {
             len && bar && bar.tick(chunk.length);
         });
 
-        if (extention === '.zip') {
+        if (extention === '.zip' || extention === '.gz') {
             stream = temp.createWriteStream();
 
             stream.on('close', function() {
                 if (done.promise.isRejected()) return;
-                self.extractZip(stream.path, cachepath).then(self.stripRootFolder).then(function(files) {
+                decompress(stream.path, cachepath).then(self.stripRootFolder).then(function(files) {
                     done.resolve(files);
                 });
             });
 
             rq.pipe(stream);
         }
-
-        return done.promise;
-    },
-    extractZip: function(zipfile, destination) {
-        var files = [],
-            done = Promise.defer();
-
-        new DecompressZip(zipfile)
-            .on('error', function(err) {
-                done.reject(err);
-            })
-            .on('extract', function(log) {
-                // Setup chmodSync to fix permissions
-                files.forEach(function(file) {
-                    fs.chmodSync(path.join(destination, file.path), file.mode);
-                });
-
-                done.resolve({
-                    files: files,
-                    destination: destination
-                });
-            })
-            .extract({
-                path: destination,
-                filter: function(entry) {
-                    files.push({
-                        path: entry.path,
-                        mode: entry.mode.toString(8)
-                    });
-
-                    return true;
-                }
-            });
 
         return done.promise;
     },
